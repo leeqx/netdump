@@ -21,7 +21,7 @@ typedef const string  CString;
 class CNetModelInterface
 {
 	public:
-		CNetModelInterface(int32_t fd):m_listendFd(fd)
+		CNetModelInterface(int32_t fd,string host,int32_t port):m_listenFd(fd),m_host(host),m_port(port)
 		{
 		}
 
@@ -31,12 +31,22 @@ class CNetModelInterface
 		virtual CString & NetRecv()=0;
 		virtual int32_t NetSend(CString& data)=0;
 
-	private:
-		int32_t m_listendFd;		
+	protected:
+		int32_t m_listenFd;		
+		string  m_host;
+		int32_t m_port;
 };
 
-// model should be select poll epoll
-template<typename model>
+// for parse packet 
+class CNetPacketParse
+{
+	public:
+		virtual int32_t Parse()=0;
+
+};
+
+// Model should be select poll epoll
+template<typename Model>
 class CNet
 {
 	CNet():m_listenFd(0)
@@ -87,10 +97,10 @@ class CNet
 			}
 		}
 
-		m_netModel = new model(m_listenFd);
+		m_netModel = new Model(m_listenFd);
 		if(m_netModel == NULL)
 		{
-				LOGINNER("ERROR:Create net model failed");
+				LOGINNER("ERROR:Create net Model failed");
 				exit(-1);
 		}
 		m_netModel->Init();
@@ -99,7 +109,7 @@ class CNet
 
 	private:
 		int32_t m_listenFd;
-		model  *m_netModel;
+		Model  *m_netModel;
 };
 
 
