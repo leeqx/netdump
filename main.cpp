@@ -6,7 +6,7 @@ int main(int argc,char* argv[])
 {
 	if(argc < 3)
 	{
-		printf("usage:%s port type[0-tcp|1-udp]\n",argv[0);
+		printf("usage:%s port type[0-tcp|1-udp]\n",argv[0]);
 		exit(-1);
 	}
 
