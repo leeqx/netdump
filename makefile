@@ -4,7 +4,7 @@ vpath %.cpp ./
 TARGET=bin/mydump
 
 SRC=$(wildcard *.cpp)
-OBJS=$(SRC: .cpp:=.o)
+OBJS=$(SRC:.cpp=.o)
 
 all:${TARGET}
 
@@ -12,8 +12,8 @@ ${TARGET}:$(OBJS)
 	g++ $? -o $@
 
 $(OBJS):%.o:%.cpp
-	g++ $? -o $@
+	g++ -c $? -o $@
 
 .PHONY:clean
 clean:
-	echo ${TARGET} ${OBJS}
+	rm -rf ${TARGET} ${OBJS}
