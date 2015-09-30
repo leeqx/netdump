@@ -140,8 +140,9 @@ class CNet
 				LOGINNER("ERROR:Create socket failed:");
 				exit(errno);
 			}
-			bool bReuseaddr = true;
-			if(setsockopt(m_netSockFd,SOL_SOCKET,SO_REUSEADDR,(const char*)&bReuseaddr,sizeof(bool)) == -1)
+			fprintf(stderr,"create socket ok:%d\n",m_netSockFd);
+			int iReuseaddr = 1;
+			if(setsockopt(m_netSockFd,SOL_SOCKET,SO_REUSEADDR,(const void*)&iReuseaddr,sizeof(int)) == -1)
 			{
 				LOGINNER("ERROR:Set socket address reuse failed");
 				exit(errno);
