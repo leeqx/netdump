@@ -9,10 +9,10 @@ OBJS=$(SRC:.cpp=.o)
 all:${TARGET}
 
 ${TARGET}:$(OBJS)
-	g++ $? -o $@
+	g++ $? -o $@ -g
 
 $(OBJS):%.o:%.cpp
-	g++ -c $? -o $@
+	g++ -c $? -o $@ -g
 
 .PHONY:clean
 clean:

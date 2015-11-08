@@ -4,10 +4,14 @@
 class CMyParse: public CNetPacketParse
 {
 public:
-    virtual int32_t Parse(const string &buffer)
+	CMyParse(char* buffer,int len):CNetPacketParse(buffer,len)
 	{
-			m_buffer = buffer;
-			fprintf(stdout,"%s\n",buffer.c_str());
-			return buffer.size();
+	}
+	// 仅仅值分析数据
+    virtual int32_t Parse()
+	{
+		LOGMSG("now handler data\n");
+		LOGMSG(m_buffer);
+		return 0;
 	}
 };

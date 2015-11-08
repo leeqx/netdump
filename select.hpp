@@ -8,7 +8,7 @@ template<typename Parse>
 class CSelect : public CNetModelInterface
 {
 	public:
-		CSelect(int32_t sockfd,string host,int32_t port):CNetModelInterface(sockfd,host,port)
+		CSelect(int32_t sockfd,string host,int32_t port):CNetModelInterface(sockfd,host,port),m_clientAddrLen(sizeof(m_clientAddr))
 		{
 		}
 	public:
@@ -34,7 +34,7 @@ class CSelect : public CNetModelInterface
 			fprintf(stdout,"%s\n",__func__);
 			int ret = 0;
 			int maxfd=m_netSockFd+1;
-			char buffer[10240] = {0};
+			char buffer[1560] = {0};
 			
 			while(1)
 			{
@@ -64,12 +64,16 @@ class CSelect : public CNetModelInterface
 						{
 							if(FD_ISSET(m_netSockFd,&m_readSet))
 							{
-								fprintf(stdout,"tcp");
 								memset(buffer,0x00,sizeof(buffer));
-								int len = recvfrom(m_netSockFd,buffer,sizeof(buffer),0,(struct sockaddr*)&m_clientAddr,&m_clientAddrLen);
-								//<TODO> 过滤以太网、ip、tcp头部，只将数据交给解析类
-								Parse parser;
-								parser.Parse(buffer);
+								int len = recvfrom(m_netSockFd,(char*)buffer,sizeof(buffer),0,(struct sockaddr*)&m_clientAddr,(socklen_t*)&m_clientAddrLen);
+								if(len == -1)
+								{
+									LOGINNER("recv return -1");
+									continue;
+								}
+								fprintf(stdout,"tcp, len:%d\n",len);
+								Parse parser(buffer,len);
+								parser.Parse();
 							}
 						}
 
