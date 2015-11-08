@@ -9,6 +9,12 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <netinet/if_ether.h>
+#include <net/if.h>
+#include <net/ethernet.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <iostream>
 #include <string>
@@ -17,6 +23,7 @@ using namespace std;
 #define LOGINNER(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<strerror(errno)<<endl;
 #define LOGMSG(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<endl;
 
+#define ETH_P_ALL 0x0003
 typedef const string  CString;
 
 enum PROTO_TYPE
@@ -65,7 +72,7 @@ template<typename Model>
 class CNet
 {
 	public:
-		CNet(int32_t port,string host="127.0.0.1"):m_netSockFd(-1)
+		CNet(int32_t port,string host="127.0.0.1"):m_netSockFd(-1),m_netModel(NULL)
 		{
 			m_host = host;
 			m_port = port;
@@ -81,7 +88,7 @@ class CNet
 				m_netModel = NULL;
 			}
 		}
-#ifdef __GUN__
+#if 1
 		// 链路抓包,不指定端口则收取所有端口数据包,z支持接受包
 		virtual int32_t InitNetRawSocket(bool isLingger=false,bool isUnBlock=false,CString & ether="eth0")
 		{
@@ -94,7 +101,7 @@ class CNet
 			struct ifreq ifr;
 
 			memset(&ifr, 0x00,sizeof(struct ifreq));
-			if((m_netSockFd = socket(PF_PACKET, SOCK_RAW, htons(0x0003))) < 0 )
+			if((m_netSockFd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0 )
 			{
 				LOGINNER("ERROR:Create raw socket failed")                                                       
 			}
@@ -134,7 +141,7 @@ class CNet
 		//网络层抓包，不指定端口则收取所有端口数据包
 		virtual int32_t InitNetServerSocket(bool isLingger=false,bool isUnBlock=false)
 		{
-			m_netSockFd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP|IPPROTO_UDP|IPPROTO_ICMP);
+			m_netSockFd = socket(AF_INET, SOCK_RAW, htons(ETH_P_ALL));
 			if(m_netSockFd == -1)
 			{
 				LOGINNER("ERROR:Create socket failed:");
