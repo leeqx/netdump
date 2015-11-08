@@ -10,8 +10,16 @@ public:
 	// 仅仅值分析数据
     virtual int32_t Parse()
 	{
-		LOGMSG("now handler data\n");
+		if (this->GetBufferLen() > 0)
+		{
+		LOGMSG("BODY:[[");
 		LOGMSG(m_buffer);
+		LOGMSG("]]");
+		}
+		else
+		{
+			LOGMSG("warn:BODY is empty !!!!");
+		}
 		return 0;
 	}
 };

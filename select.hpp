@@ -71,7 +71,10 @@ class CSelect : public CNetModelInterface
 									LOGINNER("recv return -1");
 									continue;
 								}
-								fprintf(stdout,"tcp, len:%d\n",len);
+								else if(len == 0)
+								{
+									continue;
+								}
 								Parse parser(buffer,len);
 								parser.Parse();
 							}

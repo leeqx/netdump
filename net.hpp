@@ -24,7 +24,8 @@
 using namespace std;
 
 #define LOGINNER(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<strerror(errno)<<endl;
-#define LOGMSG(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<endl;
+//#define LOGMSG(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<endl;
+#define LOGMSG(msg) cout << msg<<endl;
 
 #define ETH_P_ALL 0x0003
 typedef const string  CString;
@@ -65,23 +66,29 @@ class CNetPacketParse
 		CNetPacketParse()
 		{
 		}
-		CNetPacketParse(char* buffer,int len):m_pEtherHdr(NULL),m_pIpHdr(NULL),m_pTcpHdr(NULL),m_pUdpHdr(NULL)
+		CNetPacketParse(char* buffer,int len):m_pEtherHdr(NULL),
+										  	m_pIpHdr(NULL),
+											m_pTcpHdr(NULL),
+											m_pUdpHdr(NULL),
+											m_state(0)
 		{
 			memset(m_rawBuffer,0x00,sizeof(m_rawBuffer));
 			memset(m_buffer,0x00,sizeof(m_buffer));
 			memcpy(m_rawBuffer,buffer,len);
 			memcpy(m_buffer , buffer,len);
+
 			m_bufferLen = len;
+			m_rawBufferLen=len;
 
 			char* tmp = this->ParseEtherHdr(m_buffer);
 			tmp = this->ParseIpHdr(tmp);
+			if(0 != m_state)
+				return;
+
 			char szSourceIp[32] = {0};
 			char szDstIp[32] = {0};
 			strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
 			strcpy(szDstIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->daddr)));
-
-			fprintf(stdout,"%s %s len:%d\n",szSourceIp,szDstIp,m_bufferLen);
-
 
 			switch(m_pIpHdr->protocol)
 			{
@@ -108,31 +115,39 @@ class CNetPacketParse
 			this->DumpHeadInfo();
 		}
 		virtual int32_t Parse()=0;
-		virtual const char* GetBuffer(){return m_buffer;}
-		virtual const char* GetRawBuffer(){return m_rawBuffer;}
+		const char* GetBuffer(){return m_buffer;}
+		const char* GetRawBuffer(){return m_rawBuffer;}
+		const int32_t   GetBufferLen(){return m_bufferLen;}
+		const int32_t   GetRawBufferLen(){return m_rawBufferLen;}
 		
-		char * ParseEtherHdr(char* pBuf)
+		char* ParseEtherHdr(char* pBuf)
 		{
 			if(NULL == pBuf || m_bufferLen <46) 
 			{
+				m_state = -1;
 				LOGMSG("Parse ether_header,buffer is invalid");
-				fprintf(stderr,"strlen(pBuf)=%u \n",strlen(pBuf));
+				fprintf(stderr,"m_bufferLen=%u \n",m_bufferLen);
 				return NULL;
 			}
+			m_state = 0;
 			m_pEtherHdr = NULL;
 			char *pTmp  = pBuf;
 			m_pEtherHdr = (struct ether_header*) pTmp;
-			LOGMSG("Parse Ether_header ok");
+			//LOGMSG("Parse Ether_header ok");
 			m_bufferLen -= sizeof(struct ether_header);
 			return (char*)(pTmp + sizeof(struct ether_header));
 		} 
-		/** * 解析ip头部 */ 
+		/** 
+		 * 解析ip头部 
+		 */ 
 		char* ParseIpHdr(char* pBuf)
 		{ 
-			if(NULL == pBuf || m_bufferLen <20) {
+			if(NULL == pBuf || m_bufferLen < 20 || m_state) {
+				m_state = -2;
 				LOGMSG("Parse iphdr,buffer is invalid");
 				return NULL;
 			}
+			m_state=0;
 			char* pTmp = pBuf;
 			m_pIpHdr = NULL;
 			m_pIpHdr = (struct iphdr*)(pTmp);
@@ -141,7 +156,7 @@ class CNetPacketParse
 			pTmp += (m_pIpHdr->ihl * 4);	
 			m_bufferLen -= (m_pIpHdr->ihl *4);
 
-			LOGMSG("Parse iphdr ok");
+			//LOGMSG("Parse iphdr ok");
 			return (char*)pTmp;
 		}
 
@@ -153,12 +168,14 @@ class CNetPacketParse
 
 		char* ParseTcpHdr(char *pBuf)
 		{
-			if(NULL == pBuf || m_bufferLen <20)
+			if(NULL == pBuf || m_bufferLen <20 || m_state)
 			{
+				m_state = -3;
 				LOGMSG("Parse tcphdr ,buffer is invalid");
 				return NULL;
 			}
 
+			m_state = 0;
 			char * pTmp = pBuf;
 			m_pTcpHdr = (struct tcphdr*) (pTmp);
 
@@ -166,7 +183,7 @@ class CNetPacketParse
 			pTmp   +=  m_pTcpHdr->doff * 4;
 
 			m_bufferLen -=m_pTcpHdr->doff*4;
-			LOGMSG("Parse tcphdr ok");
+			//LOGMSG("Parse tcphdr ok");
 			return (char*)pTmp;
 		}
 
@@ -178,21 +195,27 @@ class CNetPacketParse
 		{
 			if( NULL == pBuf || m_bufferLen <(sizeof(char*) * 2 ))
 			{
+				m_state = -4;
 				LOGMSG("Parse udphdr ,buffer is invalid");
 				return NULL;
 			}
+			m_state = 0;
 			char * pTmp = pBuf;
 			m_pUdpHdr = (struct udphdr*) (pTmp);
 			m_bufferLen -= sizeof(udphdr);
 
-			LOGMSG("Parse udphdr ok");
+			//LOGMSG("Parse udphdr ok");
 			return (char*)(pTmp+ sizeof(udphdr));
 		}
 
 		void DumpHeadInfo()
 		{
-			if(NULL == m_pIpHdr)
+			if(NULL == m_pIpHdr ||  m_state != 0)
+			{
+				fprintf(stderr,"parse header error:%d\n",m_state);
 				return;
+			}
+
 			char szSourceIp[32] = {0};
 			char szDstIp[32] = {0};
 			strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
@@ -204,13 +227,17 @@ class CNetPacketParse
 					{
 						char szMsg[1024] = {0};
 
-						int len = snprintf(szMsg,1024,"tcp pkt: FROM:[%s:%u], TO:[%s:%u] ttl:%u seq:%u ack_seq:%u \n"
-								"res1:%u doff:%u fin:%u syn:%u,rst:%u psh:%u ack:%u urg:%u res2:%u window:%u check:%u urg_ptr:%u\n",
-								szSourceIp,ntohs(m_pTcpHdr->source),szDstIp,ntohs(m_pTcpHdr->dest),m_pIpHdr->ttl,m_pTcpHdr->seq,m_pTcpHdr->ack_seq,
-								m_pTcpHdr->res1,m_pTcpHdr->doff,m_pTcpHdr->fin,m_pTcpHdr->syn,m_pTcpHdr->rst,m_pTcpHdr->psh,m_pTcpHdr->urg,m_pTcpHdr->res2,
+						LOGMSG("HEADER:[[");
+						int len = snprintf(szMsg,1024,"\ttcp pkt: FROM:[%s:%u], TO:[%s:%u] \n\tttl:%u seq:%u ack_seq:%u \n"
+								"\tres1:%u doff:%u fin:%u syn:%u\n\trst:%u psh:%u ack:%u urg:%u res2:%u \n\twindow:%u check:%u urg_ptr:%u\n",
+								szSourceIp,ntohs(m_pTcpHdr->source),szDstIp,ntohs(m_pTcpHdr->dest),
+								m_pIpHdr->ttl,m_pTcpHdr->seq,m_pTcpHdr->ack_seq,
+								m_pTcpHdr->res1,m_pTcpHdr->doff,m_pTcpHdr->fin,m_pTcpHdr->syn,
+								m_pTcpHdr->rst,m_pTcpHdr->psh,m_pTcpHdr->urg,m_pTcpHdr->res2,
 								m_pTcpHdr->window,m_pTcpHdr->check,m_pTcpHdr->urg_ptr);
 						szMsg[len >= 1024? 1024-1:len+1] = '\0';
 						LOGMSG(szMsg);
+						LOGMSG("]]");
 						break;
 					}
 				case IPPROTO_UDP:
@@ -237,12 +264,15 @@ class CNetPacketParse
 		// data
 		char m_buffer[1024*10];
 		int    m_bufferLen;
+		int    m_rawBufferLen;
 
 		//protocol headers
 		struct ether_header * m_pEtherHdr;
 		struct  iphdr       * m_pIpHdr;
 		struct  tcphdr      * m_pTcpHdr;
 		struct  udphdr      * m_pUdpHdr;
+
+		bool                  m_state;
 };
 
 // Model should be select poll epoll
