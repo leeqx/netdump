@@ -7,17 +7,19 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <linux/if_ether.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
-#include <netinet/if_ether.h>
 #include <net/if.h>
 #include <net/ethernet.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <iostream>
 #include <string>
+#include <sys/ioctl.h>
+
 using namespace std;
 
 #define LOGINNER(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<strerror(errno)<<endl;
@@ -93,11 +95,6 @@ class CNet
 		virtual int32_t InitNetRawSocket(bool isLingger=false,bool isUnBlock=false,CString & ether="eth0")
 		{
 			struct ethhdr *eth_hdr;
-			struct packet_mreq mreq;
-
-			socklen_t  socklen = sizeof(struct sockaddr_ll);
-			memset(&mreq,0x00, sizeof(mreq));
-
 			struct ifreq ifr;
 
 			memset(&ifr, 0x00,sizeof(struct ifreq));
