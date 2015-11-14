@@ -12,7 +12,7 @@ class CSelect : public CNetModelInterface
 		{
 		}
 	public:
-		int32_t Init()
+		int32_t Init(CFilter filter)
 		{
 			FD_ZERO(&m_readSet);
 			FD_ZERO(&m_writeSet);
@@ -21,6 +21,7 @@ class CSelect : public CNetModelInterface
 			FD_SET(m_netSockFd,&m_writeSet);
 			m_events.clear();
 			m_events.push_back(m_netSockFd);
+            m_filter = filter;
 			return 0;
 		}
 		int32_t NetHandleEvent()
@@ -75,7 +76,7 @@ class CSelect : public CNetModelInterface
 								{
 									continue;
 								}
-								Parse parser(buffer,len);
+								Parse parser(buffer,len,m_filter);
 								parser.Parse();
 							}
 						}
@@ -99,5 +100,6 @@ class CSelect : public CNetModelInterface
 		struct sockaddr_in m_clientAddr;
 		socklen_t   m_clientAddrLen;
 		vector<int32_t> m_events;
+        CFilter      m_filter;
 };
 

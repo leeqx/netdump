@@ -41,6 +41,11 @@ class CFilter
 			m_protoType = type;
 		}
 
+        void SetEtherType(string ether)
+        {
+             m_strEtherType = ether;
+        }
+        
 		const string& GetSrcIp()
 		{
 			return	m_strSrcIp;
@@ -66,16 +71,21 @@ class CFilter
 		{
 			return m_protoType;
 		}
+        const string& GetEtherType()
+        {
+            return m_strEtherType;
+        }
 	protected:
 		string m_strSrcIp;
 		string m_strDstIp;
+        string m_strEtherType;
 		int    m_srcPort;
 		int    m_dstPort;
 
 		int    m_packetCount;
 		int    m_packetSize;
 		int    m_protoType;
-		
+    		
 	
 };
 

@@ -21,6 +21,9 @@
 #include <sys/ioctl.h>
 
 #include <stdint.h>
+
+#include "filter.hpp"
+
 using namespace std;
 
 #define LOGINNER(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<strerror(errno)<<endl;
@@ -46,7 +49,7 @@ class CNetModelInterface
 		}
 
 	public:
-		virtual int32_t Init()=0;
+		virtual int32_t Init(CFilter )=0;
 		virtual int32_t NetHandleEvent()=0;
 		virtual int32_t NetRecv()=0;
 		virtual int32_t NetSend(CString& data)=0;
@@ -66,11 +69,13 @@ class CNetPacketParse
 		CNetPacketParse()
 		{
 		}
-		CNetPacketParse(char* buffer,int len):m_pEtherHdr(NULL),
+		CNetPacketParse(char* buffer,int len,CFilter filter):m_pEtherHdr(NULL),
 										  	m_pIpHdr(NULL),
 											m_pTcpHdr(NULL),
 											m_pUdpHdr(NULL),
-											m_state(0)
+											m_state(0),
+                                            m_filter(filter)
+                                                    
 		{
 			memset(m_rawBuffer,0x00,sizeof(m_rawBuffer));
 			memset(m_buffer,0x00,sizeof(m_buffer));
@@ -89,6 +94,7 @@ class CNetPacketParse
 			char szDstIp[32] = {0};
 			strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
 			strcpy(szDstIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->daddr)));
+
 
 			switch(m_pIpHdr->protocol)
 			{
@@ -258,6 +264,37 @@ class CNetPacketParse
 			}
 		}
 
+        int Filter()
+        {
+            char szSourceIp[32] = {0};
+            char szDstIp[32] = {0};
+            strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
+            strcpy(szDstIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->daddr)));
+
+            if(m_filter.GetSrcIp().size()!= 0 
+                 && m_filter.GetSrcIp() != szSourceIp)
+                return -1;
+            if(m_filter.GetDstIp().size()!= 0 
+                 && m_filter.GetDstIp() != szDstIp)
+                return -1;
+
+            if(m_filter.GetDstPort() != 0  
+                && m_pTcpHdr && m_filter.GetDstPort() != m_pTcpHdr->dest)
+                return -1;
+
+            if(m_filter.GetSrcPort() != 0  
+                && m_pTcpHdr && m_filter.GetSrcPort() != m_pTcpHdr->source)
+                return -1;
+
+
+            if(m_filter.GetDstPort() != 0  
+                && m_pUdpHdr && m_filter.GetDstPort() != m_pUdpHdr->dest)
+                return -1;
+
+            if(m_filter.GetSrcPort() != 0  
+                && m_pUdpHdr && m_filter.GetSrcPort() != m_pUdpHdr->source)
+                return -1;
+        }
 	protected:
 		//raw msg receive from ether
 		char m_rawBuffer[1560];
@@ -273,6 +310,7 @@ class CNetPacketParse
 		struct  udphdr      * m_pUdpHdr;
 
 		bool                  m_state;
+        CFilter                m_filter;
 };
 
 // Model should be select poll epoll
@@ -301,7 +339,7 @@ class CNet
 		}
 #if 1
 		// 链路抓包,不指定端口则收取所有端口数据包,z支持接受包
-		virtual int32_t InitNetRawSocket(bool isLingger=false,bool isUnBlock=false,CString & ether="eth0")
+		virtual int32_t InitNetRawSocket(CFilter filter,bool isLingger=false,bool isUnBlock=false,CString & ether="eth0")
 		{
 			struct ifreq ifr;
 
@@ -339,12 +377,12 @@ class CNet
 				LOGINNER("ERROR:Create net Model failed");
 				exit(errno);
 			}
-			m_netModel->Init();
+			m_netModel->Init(filter);
 			m_netModel->NetHandleEvent();
 		}
 #endif
 		//网络层抓包，不指定端口则收取所有端口数据包
-		virtual int32_t InitNetServerSocket(bool isLingger=false,bool isUnBlock=false)
+		virtual int32_t InitNetServerSocket(CFilter filter,bool isLingger=false,bool isUnBlock=false)
 		{
 			m_netSockFd = socket(AF_INET, SOCK_RAW, htons(ETH_P_ALL));
 			if(m_netSockFd == -1)
@@ -390,7 +428,7 @@ class CNet
 				LOGINNER("ERROR:Create net Model failed");
 				exit(errno);
 			}
-			m_netModel->Init();
+			m_netModel->Init(filter);
 			m_netModel->NetHandleEvent();
 		}
 	private:

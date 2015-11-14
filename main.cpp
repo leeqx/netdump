@@ -61,10 +61,10 @@ int main(int argc,char* argv[])
 			}
 			case 't':
 			{
-				if(strcmp(optarg,"tcp")==0)
+				if(strncmp(optarg,"tcp",strlen("tcp"))==0)
 					filter.SetSrcPort(0);
-				else if(strcmp(optarg,"udp") == 0)
-					filter.SetSrcPort(0);
+				else if(strncmp(optarg,"udp",strlen("udp")) == 0)
+					filter.SetSrcPort(1);
 				else
 				{
 					fprintf(stderr,"prototype %s unsuport this version\n",optarg);
@@ -74,11 +74,13 @@ int main(int argc,char* argv[])
 			}
 			case 'i':
 			{
-				if(strcmp(optarg,"any") ==0)
+				if(strncmp(optarg,"any",strlen("any")) ==0)
 				{
 					fprintf(stderr,"current version unsport ether type any\n");
 					exit(0);
 				}	
+                else
+                    filter.SetEtherType(optarg);
 				break;
 			}
 			case 'c':
@@ -96,8 +98,8 @@ int main(int argc,char* argv[])
 	}
 
 
-
-	CNet< CSelect<CMyParse> > mydump(atoi(argv[1]));
+	CNet<CSelect<CMyParse> > mydump(filter.GetSrcPort());
 	//mydump.InitNetServerSocket(false,true);
-	mydump.InitNetRawSocket(false,true,argv[3]);
+	mydump.InitNetRawSocket(filter,false,true,filter.GetEtherType());
 }
+
