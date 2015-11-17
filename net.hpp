@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "filter.hpp"
+#include "stat.h"
 
 using namespace std;
 
@@ -83,9 +84,19 @@ class CNetPacketParse
 											m_pTcpHdr(NULL),
 											m_pUdpHdr(NULL),
 											m_state(0),
-                                            m_filter(filter)
+                                            m_filter(filter),
+                                            m_msgType(-1)
                                                     
 		{
+            if( m_filter.GetPacketCount() != 0 && (m_filter.GetProtoType() == 0 && 
+                 m_filter.GetPacketCount() == m_stat.m_netstat["tcp"]) ||
+                (m_filter.GetProtoType() == 1 && 
+                 m_filter.GetPacketCount() == m_stat.m_netstat["udp"]))
+            {
+                m_stat.dump();
+                exit(0);
+            }
+            m_stat.m_netstat["all"]++;
 			memset(m_rawBuffer,0x00,sizeof(m_rawBuffer));
 			memset(m_buffer,0x00,sizeof(m_buffer));
 			memcpy(m_rawBuffer,buffer,len);
@@ -108,16 +119,25 @@ class CNetPacketParse
 			switch(m_pIpHdr->protocol)
 			{
 				case IPPROTO_TCP:
-					{
-						tmp=this->ParseTcpHdr(tmp);
-						break;
-					}
+                {
+                    m_stat.m_netstat["tcp"]++;
+                    m_msgType = 0;
+                    tmp=this->ParseTcpHdr(tmp);
+                    break;
+                }
 				case IPPROTO_UDP:
-					{
-						tmp = this->ParseUdpHdr(tmp);
-						break;
-					}
+                {
+                    m_stat.m_netstat["udp"]++;
+                    m_msgType = 1;
+                    tmp = this->ParseUdpHdr(tmp);
+                    break;
+                }
 				case IPPROTO_ICMP:
+                {
+                    m_stat.m_netstat["icmp"]++;
+                    m_msgType = 2;
+                    break;
+                }
 				case IPPROTO_IGMP:
 				case IPPROTO_RAW:
 					break;
@@ -230,7 +250,12 @@ class CNetPacketParse
 				fprintf(stderr,"parse header error:%d\n",m_state);
 				return;
 			}
-
+            else if(m_isValidPackage== false)
+            {
+                fprintf(stdout,"ignore packet!!!\n")
+                return;
+            
+            }
 			char szSourceIp[32] = {0};
 			char szDstIp[32] = {0};
 			strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
@@ -264,6 +289,9 @@ class CNetPacketParse
 						break;
 					}
 				case IPPROTO_ICMP:
+                { 
+                    break;
+                }
 				case IPPROTO_IGMP:
 				case IPPROTO_RAW:
 					break;
@@ -280,6 +308,7 @@ class CNetPacketParse
             strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
             strcpy(szDstIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->daddr)));
 
+            m_isValidPackage=false;
             if(m_filter.GetSrcIp().size()!= 0 
                  && m_filter.GetSrcIp() != szSourceIp)
                 return -1;
@@ -287,39 +316,54 @@ class CNetPacketParse
                  && m_filter.GetDstIp() != szDstIp)
                 return -1;
 
-            if(m_filter.GetDstPort() != 0  
-                && m_pTcpHdr && m_filter.GetDstPort() != m_pTcpHdr->dest)
-                return -1;
+            switch(m_msgType)
+            {
+                case 0:
+                    {
+                        if(m_filter.GetDstPort() != 0  
+                         && m_pTcpHdr && m_filter.GetDstPort() != m_pTcpHdr->dest)
+                            return -1;
 
-            if(m_filter.GetSrcPort() != 0  
-                && m_pTcpHdr && m_filter.GetSrcPort() != m_pTcpHdr->source)
-                return -1;
+                        if(m_filter.GetSrcPort() != 0  
+                         && m_pTcpHdr && m_filter.GetSrcPort() != m_pTcpHdr->source)
+                            return -1;
+                        break;
+                    }
+                case 1:
+                    { 
+                        if(m_filter.GetDstPort() != 0  
+                         && m_pUdpHdr && m_filter.GetDstPort() != m_pUdpHdr->dest)
+                            return -1;
 
-
-            if(m_filter.GetDstPort() != 0  
-                && m_pUdpHdr && m_filter.GetDstPort() != m_pUdpHdr->dest)
-                return -1;
-
-            if(m_filter.GetSrcPort() != 0  
-                && m_pUdpHdr && m_filter.GetSrcPort() != m_pUdpHdr->source)
-                return -1;
+                        if(m_filter.GetSrcPort() != 0  
+                         && m_pUdpHdr && m_filter.GetSrcPort() != m_pUdpHdr->source)
+                            return -1;
+                        m_isValidPackage = false;
+                        break;
+                    }
+                default:
+                    m_isValidPackage = false;
+            }
         }
 	protected:
-		//raw msg receive from ether
-		char m_rawBuffer[1560];
-		// data
-		char m_buffer[1024*10];
-		int    m_bufferLen;
-		int    m_rawBufferLen;
+        //raw msg receive from ether
+        char m_rawBuffer[1560];
+        // data
+        char m_buffer[1024*10];
+        int    m_bufferLen;
+        int    m_rawBufferLen;
 
-		//protocol headers
-		struct ether_header * m_pEtherHdr;
-		struct  iphdr       * m_pIpHdr;
-		struct  tcphdr      * m_pTcpHdr;
-		struct  udphdr      * m_pUdpHdr;
+        //protocol headers
+        struct ether_header * m_pEtherHdr;
+        struct  iphdr       * m_pIpHdr;
+        struct  tcphdr      * m_pTcpHdr;
+        struct  udphdr      * m_pUdpHdr;
 
-		bool                  m_state;
-        CFilter                m_filter;
+        bool                  m_state;
+        CFilter               m_filter;
+        bool                  m_isValidPackage;
+        int                   m_msgType;//0-tcp,1-udp,2-icmp
+        Stat                  m_stat;
 };
 
 // Model should be select poll epoll

@@ -62,9 +62,9 @@ int main(int argc,char* argv[])
 			case 't':
 			{
 				if(strncmp(optarg,"tcp",strlen("tcp"))==0)
-					filter.SetSrcPort(0);
+					filter.SetProtoType(0);
 				else if(strncmp(optarg,"udp",strlen("udp")) == 0)
-					filter.SetSrcPort(1);
+					filter.SetProtoType(1);
 				else
 				{
 					fprintf(stderr,"prototype %s unsuport this version\n",optarg);
