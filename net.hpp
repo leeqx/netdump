@@ -27,8 +27,12 @@
 using namespace std;
 
 #define LOGINNER(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<strerror(errno)<<endl;
-//#define LOGMSG(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<endl;
-#define LOGMSG(msg) cout << msg<<endl;
+
+#ifdef LOG
+#   define LOGMSG(msg) cout << __FILE__ <<":"<<__LINE__<<"-"<<msg<<" "<<endl;
+#else
+#   define LOGMSG(msg) cout << msg<<endl;
+#endif
 
 #define ETH_P_ALL 0x0003
 typedef const string  CString;
@@ -62,7 +66,12 @@ class CNetModelInterface
 		PROTO_TYPE m_type;
 };
 
-// for parse packet 
+/**
+ * 解析原始数据包：依次解析以太网数据包-ip包-tcp|UDP|ICMP数据包，
+ * 提取最终的数据，更新到m_buffer中。
+ * Note:所有自行定义的解析包需要集成自该类，否则需要在自己的解析类
+ * 中自行解析以上三类协议报文头。
+ */
 class CNetPacketParse
 {
 	public:
