@@ -10,6 +10,9 @@ public:
 	// 仅仅值分析数据
     virtual int32_t Parse()
 	{
+        if(this->m_state!=0)
+            return -1;
+
         //filter packet
         if( -1 == this->Filter())
             LOGMSG("Ignore");
