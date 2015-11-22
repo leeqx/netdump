@@ -13,7 +13,7 @@ struct DumpStat
 {
     void operator ()(map<string,int>::value_type it)
     {
-        fprintf(stdout,"%s=%d\n",it.first.c_str(),it.second);
+        fprintf(stdout,"%10s packet=%d\n",it.first.c_str(),it.second);
     }
 };
 struct Stat
@@ -21,7 +21,9 @@ struct Stat
     map<string,int> m_netstat;
     void dump()
     {
+        fprintf(stdout,"===============packet statistic============\n");
         for_each(m_netstat.begin(),m_netstat.end(),DumpStat());
+        fprintf(stdout,"===============packet statistic============\n");
     }
 };
 

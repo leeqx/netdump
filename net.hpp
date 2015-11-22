@@ -10,7 +10,7 @@
 #include <linux/if_ether.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <netinet/tcp.h>
+#include <netinet/tcp.h> 
 #include <netinet/udp.h>
 #include <net/if.h>
 #include <net/ethernet.h>
@@ -20,8 +20,7 @@
 #include <string>
 #include <sys/ioctl.h>
 
-#include <stdint.h>
-
+#include <stdint.h> 
 #include "filter.hpp"
 #include "stat.h"
 
@@ -85,17 +84,10 @@ class CNetPacketParse
 											m_pUdpHdr(NULL),
 											m_state(0),
                                             m_filter(filter),
-                                            m_msgType(-1)
+                                            m_msgType(-1),
+                                            m_isValidPackage(false)
                                                     
 		{
-            if( m_filter.GetPacketCount() != 0 && (m_filter.GetProtoType() == 0 && 
-                 m_filter.GetPacketCount() == m_stat.m_netstat["tcp"]) ||
-                (m_filter.GetProtoType() == 1 && 
-                 m_filter.GetPacketCount() == m_stat.m_netstat["udp"]))
-            {
-                m_stat.dump();
-                exit(0);
-            }
             m_stat.m_netstat["all"]++;
 			memset(m_rawBuffer,0x00,sizeof(m_rawBuffer));
 			memset(m_buffer,0x00,sizeof(m_buffer));
@@ -142,12 +134,17 @@ class CNetPacketParse
 				case IPPROTO_RAW:
 					break;
 				default:
+                    m_isValidPackage = false;
 					LOGMSG("parse header,unknow prototcol");
 					break;
 			}
 			memcpy(m_buffer ,(char*)tmp,m_bufferLen);
 
-			this->DumpHeadInfo();
+            this->Filter();
+            if(this->m_isValidPackage == true)
+            {
+                this->DumpHeadInfo(); 
+            }
 		}
 		virtual int32_t Parse()=0;
 		const char* GetBuffer(){return m_buffer;}
@@ -160,6 +157,7 @@ class CNetPacketParse
 			if(NULL == pBuf || m_bufferLen <46) 
 			{
 				m_state = -1;
+                m_stat.m_netstat["ether_error"]++;
 				LOGMSG("Parse ether_header,buffer is invalid");
 				fprintf(stderr,"m_bufferLen=%u \n",m_bufferLen);
 				return NULL;
@@ -170,6 +168,7 @@ class CNetPacketParse
 			m_pEtherHdr = (struct ether_header*) pTmp;
 			//LOGMSG("Parse Ether_header ok");
 			m_bufferLen -= sizeof(struct ether_header);
+            m_isValidPackage = true;
 			return (char*)(pTmp + sizeof(struct ether_header));
 		} 
 		/** 
@@ -179,6 +178,7 @@ class CNetPacketParse
 		{ 
 			if(NULL == pBuf || m_bufferLen < 20 || m_state) {
 				m_state = -2;
+                m_stat.m_netstat["ip_error"]++;
 				LOGMSG("Parse iphdr,buffer is invalid");
 				return NULL;
 			}
@@ -191,6 +191,7 @@ class CNetPacketParse
 			pTmp += (m_pIpHdr->ihl * 4);	
 			m_bufferLen -= (m_pIpHdr->ihl *4);
 
+            m_isValidPackage = true;
 			//LOGMSG("Parse iphdr ok");
 			return (char*)pTmp;
 		}
@@ -206,6 +207,7 @@ class CNetPacketParse
 			if(NULL == pBuf || m_bufferLen <20 || m_state)
 			{
 				m_state = -3;
+                m_stat.m_netstat["tcp_error"]++;
 				LOGMSG("Parse tcphdr ,buffer is invalid");
 				return NULL;
 			}
@@ -219,6 +221,7 @@ class CNetPacketParse
 
 			m_bufferLen -=m_pTcpHdr->doff*4;
 			//LOGMSG("Parse tcphdr ok");
+            m_isValidPackage = true;
 			return (char*)pTmp;
 		}
 
@@ -231,6 +234,7 @@ class CNetPacketParse
 			if( NULL == pBuf || m_bufferLen <(sizeof(char*) * 2 ))
 			{
 				m_state = -4;
+                m_stat.m_netstat["udp_error"]++;
 				LOGMSG("Parse udphdr ,buffer is invalid");
 				return NULL;
 			}
@@ -240,17 +244,18 @@ class CNetPacketParse
 			m_bufferLen -= sizeof(udphdr);
 
 			//LOGMSG("Parse udphdr ok");
+            m_isValidPackage = true;
 			return (char*)(pTmp+ sizeof(udphdr));
 		}
 
 		void DumpHeadInfo()
 		{
-			if(NULL == m_pIpHdr ||  m_state != 0)
+			if(NULL == m_pIpHdr ||  m_state != 0) // packet parse state
 			{
 				fprintf(stderr,"parse header error:%d\n",m_state);
 				return;
 			}
-            else if(m_isValidPackage== false)
+            else if(m_isValidPackage== false) // filter pattern
             {
                 fprintf(stdout,"ignore packet!!!\n");
                 return;
@@ -304,46 +309,65 @@ class CNetPacketParse
         int Filter()
         {
             char szSourceIp[32] = {0};
-            char szDstIp[32] = {0};
+            char szDstIp[32]    = {0};
             strcpy(szSourceIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->saddr)));
             strcpy(szDstIp,inet_ntoa(*(struct in_addr*)&(m_pIpHdr->daddr)));
+ 
+            m_isValidPackage = false;
 
-            m_isValidPackage=false;
+            if( m_filter.GetPacketCount() != 0 &&
+                 m_filter.GetPacketCount() == m_stat.m_netstat["all"]
+             )
+            {
+                m_stat.dump();
+                exit(0);
+            }
+
             if(m_filter.GetSrcIp().size()!= 0 
                  && m_filter.GetSrcIp() != szSourceIp)
                 return -1;
+
             if(m_filter.GetDstIp().size()!= 0 
                  && m_filter.GetDstIp() != szDstIp)
-                return -1;
+                return -2;
 
             switch(m_msgType)
             {
                 case 0:
                     {
                         if(m_filter.GetDstPort() != 0  
-                         && m_pTcpHdr && m_filter.GetDstPort() != m_pTcpHdr->dest)
-                            return -1;
+                         && m_pTcpHdr && m_filter.GetDstPort() != ntohs(m_pTcpHdr->dest))
+                        {
+                            return -3;
+                        }
 
                         if(m_filter.GetSrcPort() != 0  
-                         && m_pTcpHdr && m_filter.GetSrcPort() != m_pTcpHdr->source)
-                            return -1;
+                         && m_pTcpHdr && m_filter.GetSrcPort() != ntohs(m_pTcpHdr->source))
+                        {
+                            return -4;
+                        }
                         break;
                     }
                 case 1:
                     { 
                         if(m_filter.GetDstPort() != 0  
-                         && m_pUdpHdr && m_filter.GetDstPort() != m_pUdpHdr->dest)
-                            return -1;
+                         && m_pUdpHdr && m_filter.GetDstPort() != ntohs(m_pUdpHdr->dest))
+                        {
+                            return -5;
+                        }
 
                         if(m_filter.GetSrcPort() != 0  
-                         && m_pUdpHdr && m_filter.GetSrcPort() != m_pUdpHdr->source)
-                            return -1;
-                        m_isValidPackage = false;
+                         && m_pUdpHdr && m_filter.GetSrcPort() != ntohs(m_pUdpHdr->source))
+                        {
+                            return -6;
+                        }
                         break;
                     }
                 default:
-                    m_isValidPackage = false;
+                    break;
             }
+            m_isValidPackage = true;
+            return 0;
         }
 	protected:
         //raw msg receive from ether
@@ -363,8 +387,10 @@ class CNetPacketParse
         CFilter               m_filter;
         bool                  m_isValidPackage;
         int                   m_msgType;//0-tcp,1-udp,2-icmp
-        Stat                  m_stat;
+        static Stat           m_stat;
 };
+
+Stat CNetPacketParse::m_stat={};
 
 // Model should be select poll epoll
 template<typename Model>

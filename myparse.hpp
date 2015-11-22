@@ -15,11 +15,6 @@ public:
         else if(this->m_isValidPackage==false)
             return -2;
 
-
-        //filter packet
-        if( -1 == this->Filter())
-            LOGMSG("Ignore");
-        
         if (this->GetBufferLen() > 0)
         {
             LOGMSG("BODY:[[");

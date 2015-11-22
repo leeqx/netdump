@@ -10,7 +10,8 @@ int useage()
 			"\t s-packet size \n"
 			"\t S-source ip \n"
 			"\t D-dest   ip \n"
-			"\t P-port \n"
+            "\t p-source port\n"
+            "\t d-dst    port\n"
 			"\t t-protocol type:tcp|udp|icmp \n"
 			"\t i-ether  lo|eth0|eth1 \n"
 			"\t c-max packet count \n");
@@ -30,12 +31,13 @@ int main(int argc,char* argv[])
 	// s-packet size
 	// S-source ip
 	// D-dest   ip
-	// P-port
+	// p-source port
+	// d-dst    port
 	// t-protocol type:tcp|udp|icmp
 	// i-ether  lo|eth0|eth1
 	// c-max packet count
 	// 
-	while((c=getopt(argc,argv,"s:S:D:P:t:i:c:")) != -1)
+	while((c=getopt(argc,argv,"s:S:D:t:i:c:p:d:")) != -1)
 	{
 		switch(c)
 		{
@@ -54,11 +56,16 @@ int main(int argc,char* argv[])
 				filter.SetDstIp(optarg);
 				break;
 			}
-			case 'P':
+			case 'p':
 			{
 				filter.SetSrcPort(atoi(optarg));
 				break;
 			}
+			case 'd':
+			{
+				filter.SetDstPort(atoi(optarg));
+				break;
+            }
 			case 't':
 			{
 				if(strncmp(optarg,"tcp",strlen("tcp"))==0)
