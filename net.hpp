@@ -252,7 +252,7 @@ class CNetPacketParse
 			}
             else if(m_isValidPackage== false)
             {
-                fprintf(stdout,"ignore packet!!!\n")
+                fprintf(stdout,"ignore packet!!!\n");
                 return;
             
             }
