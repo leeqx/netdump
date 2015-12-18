@@ -1,5 +1,6 @@
 #pragma once
 #include "net.hpp"
+#include "netparse.h"
 
 class CMyParse: public CNetPacketParse
 {
