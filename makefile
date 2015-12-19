@@ -9,6 +9,7 @@ OBJS=$(SRC:.cpp=.o)
 all:${TARGET}
 
 ${TARGET}:$(OBJS)
+	rm -rf bin;mkdir bin
 	g++ $? -o $@ -g
 
 $(OBJS):%.o:%.cpp
