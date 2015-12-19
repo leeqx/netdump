@@ -1,4 +1,6 @@
 ## netdump
+[![Build Status](https://travis-ci.org/leeqx/netdump.png)](https://travis-ci.org/leeqx/netdump)
+
 抓包工具，可以实现自己的数据解析插件、抓取数据包然后转换成相应的格式输出
 
 eg：
