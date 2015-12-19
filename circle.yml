@@ -1,0 +1,5 @@
+build:
+    pre:
+        - make
+    override:
+        - make all
