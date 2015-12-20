@@ -52,7 +52,7 @@ class CRedisParse: public CNetPacketParse
                 char* buffer = new char[m_buffer.size()+1];
                 if(buffer)
                 {
-                    memcpy(buffer,m_buffer.c_str(),m_buffer.size());
+                    memncpy(buffer,m_buffer.c_str(),m_buffer.size());
                     switch((char)buffer)
                     {
                         case ':':
@@ -72,7 +72,6 @@ class CRedisParse: public CNetPacketParse
                             }
                         case '$':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1)
                                 for(char*pos = strtok(buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\rn"),i++)
                                 {
                                     if(i % 2 == 0)
