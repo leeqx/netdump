@@ -13,7 +13,7 @@ using std::pair;
 struct redisPackPrint{
     void operator ()(pair<string,string> data)
     {
-        fprintf(stdout,"%s=%s\n",data->first.c_str(),data->second.c_str()); 
+        fprintf(stdout,"%s=%s\n",data.first.c_str(),data.second.c_str()); 
     }
 };
 
