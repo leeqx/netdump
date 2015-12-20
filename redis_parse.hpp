@@ -104,7 +104,7 @@ class CRedisParse: public CNetPacketParse
                                     }
 
                                 }
-                                for_each(redisVal.kvs.begine(),redisVal.kvs.end(),redisPackPrint());
+                                for_each(redisVal.kvs.begin(),redisVal.kvs.end(),redisPackPrint());
                                 break;
                             }
                         default:
