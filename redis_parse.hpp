@@ -85,7 +85,7 @@ class CRedisParse: public CNetPacketParse
                                 }
                                 break;
                             }
-                        case "*":
+                        case '*':
                             {
                                 RedisPackage redisVal;
                                 for(char *pos = strtok(buffer+1,"\r\n"),int i = 0;pos;pos=strtok(NULL,"\r\n"),i++)
