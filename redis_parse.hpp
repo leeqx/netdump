@@ -13,7 +13,7 @@ using std::pair;
 struct redisPackPrint{
     void operator ()(pair<string,string> data)
     {
-        fprintf(stdout,"%s=%s\n",data.first->c_str(),data.second->c_str()); 
+        fprintf(stdout,"%s=%s\n",data->first.c_str(),data->second.c_str()); 
     }
 };
 
@@ -25,7 +25,7 @@ typedef struct redispack{
 class CRedisParse: public CNetPacketParse
 {
     public:
-        CRedisParse(char* buffer,int len,CFilter filter):CNetPacketParse(buffer,len,filter)
+        CRedisParse(char* m_buffer,int len,CFilter filter):CNetPacketParse(m_buffer,len,filter)
         {
         }
         /**
@@ -49,30 +49,28 @@ class CRedisParse: public CNetPacketParse
 
             if(this->GetBufferLen() >0)
             {
-                char* buffer = new char[m_buffer.size()+1];
-                if(buffer)
+                if(m_buffer)
                 {
-                    memcpy(buffer,m_buffer.c_str(),m_buffer.size());
-                    switch((char)buffer)
+                    switch(m_buffer[0])
                     {
                         case ':':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1);
+                                fprintf(stdout,"value=[%s]",m_buffer+1);
                                 break;
                             }
                         case '+':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1);
+                                fprintf(stdout,"value=[%s]",m_buffer+1);
                                 break;
                             }
                         case '-':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1);
+                                fprintf(stdout,"value=[%s]",m_buffer+1);
                                 break;
                             }
                         case '$':
                             {
-                                for(char*pos = strtok(buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\rn"),i++)
+                                for(char*pos = strtok(m_buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\rn"),i++)
                                 {
                                     if(i % 2 == 0)
                                     {
@@ -88,7 +86,7 @@ class CRedisParse: public CNetPacketParse
                         case '*':
                             {
                                 RedisPackage redisVal;
-                                for(char *pos = strtok(buffer+1,"\r\n"),int i = 0;pos;pos=strtok(NULL,"\r\n"),i++)
+                                for(char *pos = strtok(m_buffer+1,"\r\n"),int i = 0;pos;pos=strtok(NULL,"\r\n"),i++)
                                 {
                                     if( i % 2 == 0 && i == 0)
                                     {
@@ -108,10 +106,8 @@ class CRedisParse: public CNetPacketParse
                                 break;
                             }
                         default:
-                            LOGMSG("unexpected buffer");
+                            LOGMSG("unexpected m_buffer");
                     }
-                    delete [] buffer;
-                    buffer = NULL;
                 }
                 else
                 {
