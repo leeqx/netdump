@@ -70,7 +70,8 @@ class CRedisParse: public CNetPacketParse
                             }
                         case '$':
                             {
-                                for(char*pos = strtok(m_buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\n"),i++)
+                                int i = 0;
+                                for(char*pos = strtok(m_buffer+1,"\r\n");pos;pos=strtok(NULL,"\r\n"),i++)
                                 {
                                     if(i % 2 == 0)
                                     {
@@ -86,7 +87,8 @@ class CRedisParse: public CNetPacketParse
                         case '*':
                             {
                                 RedisPackage redisVal;
-                                for(char *pos = strtok(m_buffer+1,"\r\n"),int i = 0;pos;pos=strtok(NULL,"\r\n"),i++)
+                                int i = 0;
+                                for(char *pos = strtok(m_buffer+1,"\r\n");pos;pos=strtok(NULL,"\r\n"),i++)
                                 {
                                     if( i % 2 == 0 && i == 0)
                                     {
