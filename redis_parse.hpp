@@ -13,7 +13,7 @@ using std::pair;
 struct redisPackPrint{
     void operator ()(pair<string,string> data)
     {
-        fprintf(stdout,"%s=%s\n",data.first.c_str(),data.second.c_str()); 
+        fprintf(stdout,"%s=%s\n",data.first->c_str(),data.second->c_str()); 
     }
 };
 
@@ -52,7 +52,7 @@ class CRedisParse: public CNetPacketParse
                 char* buffer = new char[m_buffer.size()+1];
                 if(buffer)
                 {
-                    memncpy(buffer,m_buffer.c_str(),m_buffer.size());
+                    memcpy(buffer,m_buffer.c_str(),m_buffer.size());
                     switch((char)buffer)
                     {
                         case ':':
@@ -115,7 +115,7 @@ class CRedisParse: public CNetPacketParse
                 }
                 else
                 {
-                    LOGMSG("error: memory operator failed:");
+                   // LOGMSG("error: memory operator failed:");
                 }
             }
         }
