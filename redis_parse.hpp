@@ -51,7 +51,7 @@ class CRedisParse: public CNetPacketParse
             {
                 if(m_buffer)
                 {
-                    switch(m_buffer[0])
+                    switch((char)m_buffer[0])
                     {
                         case ':':
                             {
@@ -70,7 +70,7 @@ class CRedisParse: public CNetPacketParse
                             }
                         case '$':
                             {
-                                for(char*pos = strtok(m_buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\rn"),i++)
+                                for(char*pos = strtok(m_buffer+1,"\r\n"),i=0;pos;pos=strtok(NULL,"\r\n"),i++)
                                 {
                                     if(i % 2 == 0)
                                     {
