@@ -6,9 +6,9 @@
 #include "net.hpp"
 #include "netparse.h"
 
-using namespace std::string;
-using namespace std::map;
-using namespace std::pair;
+using std::string;
+using std::map;
+using std::pair;
 
 struct redisPackPrint{
     void operator ()(pair<string,string> data)
@@ -57,17 +57,17 @@ class CRedisParse: public CNetPacketParse
                     {
                         case ':':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1)
+                                fprintf(stdout,"value=[%s]",buffer+1);
                                 break;
                             }
                         case '+':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1)
+                                fprintf(stdout,"value=[%s]",buffer+1);
                                 break;
                             }
                         case '-':
                             {
-                                fprintf(stdout,"value=[%s]",buffer+1)
+                                fprintf(stdout,"value=[%s]",buffer+1);
                                 break;
                             }
                         case '$':
@@ -77,11 +77,11 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if(i % 2 == 0)
                                     {
-                                        fprintf(stdout,"len=%s\n",pos)
+                                        fprintf(stdout,"len=%s\n",pos);
                                     }
                                     else
                                     {
-                                        fprintf(stdout,"data=%s",pos)
+                                        fprintf(stdout,"data=%s",pos);
                                     }
                                 }
                                 break;
@@ -93,19 +93,19 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if( i % 2 == 0 && i == 0)
                                     {
-                                        redisVal.insert(pair<string,string>("total",pos));
+                                        redisVal.kvs.insert(pair<string,string>("total",pos));
                                     }
                                     else if (i % 2 == 1)
                                     {
-                                        redisVal.insert(pair<string,string>("len",pos))
+                                        redisVal.kvs.insert(pair<string,string>("len",pos));
                                     }
                                     else
                                     {
-                                        redisVal.insert(pair<string,string>("value",pos))
+                                        redisVal.kvs.insert(pair<string,string>("value",pos));
                                     }
 
                                 }
-                                for_each(redisVal.begine(),redisVal.end(),redisPackPrint());
+                                for_each(redisVal.kvs.begine(),redisVal.kvs.end(),redisPackPrint());
                                 break;
                             }
                         default:
@@ -116,8 +116,9 @@ class CRedisParse: public CNetPacketParse
                 }
                 else
                 {
-                    LOGMSG("error: memory operator failed:")
+                    LOGMSG("error: memory operator failed:");
                 }
             }
         }
 };
+
