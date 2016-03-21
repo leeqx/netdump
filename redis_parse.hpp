@@ -1,6 +1,6 @@
 #pragma once
 #include <string.h>
-#include <map>
+#include <vector>
 #include <algorithm>
 
 #include "net.hpp"
@@ -20,15 +20,15 @@ typedef struct _Value
 }Value;
 
 struct redisPackPrint{
-    void operator ()(pair<int,Value> data)
+    void operator ()(Value data)
     {
-        fprintf(stdout,"%s=%s\n",data.second.key.c_str(),data.second.value.c_str()); 
+        fprintf(stdout,"%s=%s\n",data.key.c_str(),data.value.c_str()); 
     }
 };
 
 typedef struct redispack{
     char nNumber;
-    map<string,Value> kvs;
+    vector<Value> kvs;
 }RedisPackage;
 
 class CRedisParse: public CNetPacketParse
@@ -101,15 +101,15 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if( i % 2 == 0 && i == 0)
                                     {
-                                        redisVal.kvs.insert(pair<int,Value>(1,Value("total",(char*)pos)));
+                                        redisVal.kvs.push_back(Value("total",(char*)pos));
                                     }
                                     else if (i % 2 == 1)
                                     {
-                                        redisVal.kvs.insert(pair<int,Value>(2,Value("len",(char*)pos)));
+                                        redisVal.kvs.push_back(Value("len",(char*)pos));
                                     }
                                     else
                                     {
-                                        redisVal.kvs.insert(pair<int,Value>(3,Value("value",(char*)pos)));
+                                        redisVal.kvs.push_back(Value("value",(char*)pos));
                                     }
 
                                 }
