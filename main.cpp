@@ -22,7 +22,7 @@ int useage()
      "\t t-protocol type:tcp|udp|icmp \n"
      "\t i-ether  lo|eth0|eth1 \n"
      "\t c-max packet count \n"
-     "\t u-use parse to pare packet\n");
+     "\t u-use parse to pare packet[raw|redis]\n");
     return 0;
 }
 int main(int argc,char* argv[])
@@ -105,26 +105,30 @@ int main(int argc,char* argv[])
                     break;
                 }
             case 'u':
+            case 'U':
                 {
                     if(strncmp(optarg,"raw",strlen("raw")) == 0)
                     {
+                        fprintf(stdout,"set parser as raw type\n");
                         parseType = EDEFAULT;
                     }
-                    else if(strncmp(optarg,"redis",strlen("redis")))
+                    else if(strncmp(optarg,"redis",strlen("redis")) == 0)
                     {
+                        fprintf(stdout,"set parser as REDIS protocol type\n");
                         parseType = EREDIS; 
                     }
                     else
                     {
+                        fprintf(stdout,"set parser as raw type:%s\n",optarg);
                         parseType = EDEFAULT;
                     }
-
+                    break;
                 }
             default:
                 {
-                    fprintf(stderr,"unsuport option\n");
+                    fprintf(stderr,"unsuport option:%s\n",optarg);
                     useage();
-                    break;
+                    return 0;
                 }
         }
     }

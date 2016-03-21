@@ -10,16 +10,25 @@ using std::string;
 using std::map;
 using std::pair;
 
-struct redisPackPrint{
-    void operator ()(pair<string,string> data)
+typedef struct _Value
+{
+    string key;
+    string value;
+    _Value(string k,string v):key(k),value(v)
     {
-        fprintf(stdout,"%s=%s\n",data.first.c_str(),data.second.c_str()); 
+    }
+}Value;
+
+struct redisPackPrint{
+    void operator ()(pair<int,Value> data)
+    {
+        fprintf(stdout,"%s=%s\n",data.second.key.c_str(),data.second.value.c_str()); 
     }
 };
 
 typedef struct redispack{
     char nNumber;
-    map<string,string> kvs;
+    map<string,Value> kvs;
 }RedisPackage;
 
 class CRedisParse: public CNetPacketParse
@@ -35,7 +44,7 @@ class CRedisParse: public CNetPacketParse
          *     "*3\r\n$3\r\nSET\r\n$5\r\nmykey\r\n$7\r\nmyvalue\r\n\r\n
          * 应答包:
          *   如果是单行回复，那么第一个字节是「+」
-         *   如果回复的内容是错误信息，那么第一个字节是「_」
+         *   如果回复的内容是错误信息，那么第一个字节是「-」
          *   如果回复的内容是一个整型数字，那么第一个字节是「:」
          *   如果是bulk回复，那么第一个字节是「$」
          *   如果是multi-bulk回复，那么第一个字节是「*」
@@ -55,17 +64,17 @@ class CRedisParse: public CNetPacketParse
                     {
                         case ':':
                             {
-                                fprintf(stdout,"value=[%s]",m_buffer+1);
+                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '+':
                             {
-                                fprintf(stdout,"value=[%s]",m_buffer+1);
+                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '-':
                             {
-                                fprintf(stdout,"value=[%s]",m_buffer+1);
+                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '$':
@@ -75,11 +84,11 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if(i % 2 == 0)
                                     {
-                                        fprintf(stdout,"len=%s\n",pos);
+                                        fprintf(stdout,"len=[%s]\n",pos);
                                     }
                                     else
                                     {
-                                        fprintf(stdout,"data=%s",pos);
+                                        fprintf(stdout,"value=[%s]\n",pos);
                                     }
                                 }
                                 break;
@@ -92,15 +101,15 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if( i % 2 == 0 && i == 0)
                                     {
-                                        redisVal.kvs.insert(pair<string,string>("total",pos));
+                                        redisVal.kvs.insert(pair<int,Value>(1,Value("total",(char*)pos)));
                                     }
                                     else if (i % 2 == 1)
                                     {
-                                        redisVal.kvs.insert(pair<string,string>("len",pos));
+                                        redisVal.kvs.insert(pair<int,Value>(2,Value("len",(char*)pos)));
                                     }
                                     else
                                     {
-                                        redisVal.kvs.insert(pair<string,string>("value",pos));
+                                        redisVal.kvs.insert(pair<int,Value>(3,Value("value",(char*)pos)));
                                     }
 
                                 }
