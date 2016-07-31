@@ -22,7 +22,7 @@ typedef struct _Value
 struct redisPackPrint{
     void operator ()(Value data)
     {
-        fprintf(stdout,"%s=%s\n",data.key.c_str(),data.value.c_str()); 
+        fprintf(stdout,"\t-%s=%s\n",data.key.c_str(),data.value.c_str());
     }
 };
 
@@ -34,7 +34,7 @@ typedef struct redispack{
 class CRedisParse: public CNetPacketParse
 {
     public:
-        CRedisParse(char* m_buffer,int len,CFilter filter):CNetPacketParse(m_buffer,len,filter)
+        CRedisParse(char* m_buffer,int len,CFilter filter):CNetPacketParse("redis",m_buffer,len,filter)
         {
         }
         /**
@@ -64,17 +64,17 @@ class CRedisParse: public CNetPacketParse
                     {
                         case ':':
                             {
-                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
+                                fprintf(stdout,"\t-value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '+':
                             {
-                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
+                                fprintf(stdout,"\t-value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '-':
                             {
-                                fprintf(stdout,"value=[%s]\n",m_buffer+1);
+                                fprintf(stdout,"\t-value=[%s]\n",m_buffer+1);
                                 break;
                             }
                         case '$':
@@ -84,11 +84,11 @@ class CRedisParse: public CNetPacketParse
                                 {
                                     if(i % 2 == 0)
                                     {
-                                        fprintf(stdout,"len=[%s]\n",pos);
+                                        fprintf(stdout,"\t\t-len=[%s]\n",pos);
                                     }
                                     else
                                     {
-                                        fprintf(stdout,"value=[%s]\n",pos);
+                                        fprintf(stdout,"\t\t-value=[%s]\n",pos);
                                     }
                                 }
                                 break;
@@ -97,19 +97,24 @@ class CRedisParse: public CNetPacketParse
                             {
                                 RedisPackage redisVal;
                                 int i = 0;
+                                int total = 0;
                                 for(char *pos = strtok(m_buffer+1,"\r\n");pos;pos=strtok(NULL,"\r\n"),i++)
                                 {
+                                    printf("%d ",i);
+                                    if(i!=0 && i>total*2+1)
+                                        break;
                                     if( i % 2 == 0 && i == 0)
                                     {
-                                        redisVal.kvs.push_back(Value("total",(char*)pos));
+                                        total =(int) *pos;
+                                        redisVal.kvs.push_back(Value("\t+total",(char*)pos));
                                     }
                                     else if (i % 2 == 1)
                                     {
-                                        redisVal.kvs.push_back(Value("len",(char*)pos));
+                                        redisVal.kvs.push_back(Value("\t\t-len",(char*)pos));
                                     }
                                     else
                                     {
-                                        redisVal.kvs.push_back(Value("value",(char*)pos));
+                                        redisVal.kvs.push_back(Value("\t\t-value",(char*)pos));
                                     }
 
                                 }
@@ -117,7 +122,7 @@ class CRedisParse: public CNetPacketParse
                                 break;
                             }
                         default:
-                            LOGMSG("unexpected m_buffer");
+                            LOG("unexpected m_buffer:%c",m_buffer[0]);
                     }
                 }
                 else

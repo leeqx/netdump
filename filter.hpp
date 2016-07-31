@@ -8,6 +8,10 @@
 #include <string>
 using std::string;
 
+#define BOTH 0x03
+#define DEST 0x01
+#define SOURCE 0x02
+
 class CFilter
 {
     public:
@@ -19,7 +23,8 @@ class CFilter
             m_dstPort(0),
             m_packetCount(0),
             m_packetSize(0),
-            m_protoType(0)
+            m_protoType(0),
+            m_bothPort(0)
         {
         }
 
@@ -34,12 +39,19 @@ class CFilter
         void SetSrcPort(int port)
         {
             m_srcPort = port;
+            m_portType = SOURCE;
         }
         void SetDstPort(int port)
         {
             m_dstPort = port;
+            m_portType = DEST;
         }
 
+        void SetBothPort(int port)
+        {
+            m_bothPort = port;
+            m_portType = BOTH;
+        }
         void SetPacketCount(int count)
         {
             m_packetCount = count;
@@ -60,7 +72,7 @@ class CFilter
 
         const string& GetSrcIp()
         {
-            return	m_strSrcIp;
+            return    m_strSrcIp;
         }
         const string& GetDstIp()
         {
@@ -73,6 +85,10 @@ class CFilter
         int GetDstPort()
         {
             return m_dstPort  ;
+        }
+        int GetBothPort()
+        {
+            return m_bothPort;
         }
 
         int GetPacketCount()
@@ -87,12 +103,18 @@ class CFilter
         {
             return m_strEtherType;
         }
+        int GetPortType()
+        {
+            return m_portType;
+        }
     protected:
         string m_strSrcIp;
         string m_strDstIp;
         string m_strEtherType;
         int    m_srcPort;
         int    m_dstPort;
+        int    m_bothPort;
+        int    m_portType;
 
         int    m_packetCount;
         int    m_packetSize;

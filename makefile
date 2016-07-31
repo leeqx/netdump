@@ -5,16 +5,17 @@ TARGET=bin/mydump
 
 SRC=$(wildcard *.cpp)
 OBJS=$(SRC:.cpp=.o)
+OBJDIR=./objs/
 
 all:${TARGET}
 
 ${TARGET}:$(OBJS)
-	rm -rf bin;mkdir bin
-	g++ $? -o $@ -g
+	[ ! -e bin ] && mkdir bin
+	g++ $(addprefix ${OBJDIR},$?) -o $@ -g
 
 $(OBJS):%.o:%.cpp
-	g++ -c $? -o $@ -g
+	[ ! -e $(dir $(addprefix ${OBJDIR}/,$^)) ] && mkdir -p $(dir $(addprefix ${OBJDIR},$^));g++ -c $? -o $(addprefix ${OBJDIR},$@ ) -g
 
 .PHONY:clean
 clean:
-	rm -rf ${TARGET} ${OBJS}
+	rm -rf ${TARGET} $(addprefix ./${OBJDIR}/,${OBJS})

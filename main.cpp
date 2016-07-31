@@ -17,7 +17,8 @@ int useage()
      "\t s-packet size \n"
      "\t S-source ip \n"
      "\t D-dest   ip \n"
-     "\t p-source port\n"
+     "\t p-source and dst port\n"
+     "\t P-source port\n"
      "\t d-dst    port\n"
      "\t t-protocol type:tcp|udp|icmp \n"
      "\t i-ether  lo|eth0|eth1 \n"
@@ -45,13 +46,13 @@ int main(int argc,char* argv[])
     // i-ether  lo|eth0|eth1
     // c-max packet count
     // u-use parse to pare packet
-    // 
-    while((c=getopt(argc,argv,"s:S:D:t:i:c:p:d:u:")) != -1)
+    //
+    while((c=getopt(argc,argv,"s:S:D:t:i:c:p:d:u:P:")) != -1)
     {
         switch(c)
         {
             case 's':
-                {	
+                {
                     filter.SetPacketSize(atoi(optarg));
                     break;
                 }
@@ -66,6 +67,11 @@ int main(int argc,char* argv[])
                     break;
                 }
             case 'p':
+                {
+                    filter.SetBothPort(atoi(optarg));
+                    break;
+                }
+            case 'P':
                 {
                     filter.SetSrcPort(atoi(optarg));
                     break;
@@ -94,7 +100,7 @@ int main(int argc,char* argv[])
                     {
                         fprintf(stderr,"current version unsport ether type any\n");
                         exit(0);
-                    }	
+                    }
                     else
                         filter.SetEtherType(optarg);
                     break;
@@ -115,7 +121,7 @@ int main(int argc,char* argv[])
                     else if(strncmp(optarg,"redis",strlen("redis")) == 0)
                     {
                         fprintf(stdout,"set parser as REDIS protocol type\n");
-                        parseType = EREDIS; 
+                        parseType = EREDIS;
                     }
                     else
                     {
